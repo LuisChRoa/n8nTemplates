@@ -1,0 +1,598 @@
+{
+  "name": "Vectorizar documento Multi",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -272
+      ],
+      "id": "f77ce41f-295e-493a-b501-faaabb5e3506",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1XkB15b_iRIC4iXTB0sv6LCII7t0yzwRg",
+          "mode": "list",
+          "cachedResultName": "manual_usuario_dinelia_pdf.pdf",
+          "cachedResultUrl": "https://drive.google.com/file/d/1XkB15b_iRIC4iXTB0sv6LCII7t0yzwRg/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        144,
+        -272
+      ],
+      "id": "90a69ebf-aaf5-4feb-a864-bbbee1ccf5c4",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "CkQfVbqVoA8uXFEm",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.document.mimeType }}",
+                    "rightValue": "application/pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f147d8a8-931d-4c45-817c-99f69d8d9897"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f8529756-aa15-4b6a-b538-7288ead0a1ec",
+                    "leftValue": "={{ $json.document.mimeType }}",
+                    "rightValue": "text/plain",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        384,
+        -32
+      ],
+      "id": "54095568-dee5-4b1f-b23d-10aed48d2b9d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1424,
+        -272
+      ],
+      "id": "91e95c34-16d0-408f-bedf-1ba35d33a14b",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "UgNUGs34zxZ90xKb",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        -64
+      ],
+      "id": "27c769dc-c8d2-4551-8969-ff648337f5fd",
+      "name": "Embeddings HuggingFace Inference",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "mReahyA47XLpY8x2",
+          "name": "HuggingFaceApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.document_data }}",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "document_id",
+                "value": "={{ $json.document_id }}"
+              },
+              {
+                "name": "document_name",
+                "value": "={{ $json.document_name }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1488,
+        -64
+      ],
+      "id": "81b48529-b03a-4ba3-ac69-95db89bf91fe",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 200,
+        "chunkOverlap": 20,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        112
+      ],
+      "id": "e4942ea3-3a94-4ba8-a9ff-2e9b5465615f",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "documents_name",
+          "mode": "list",
+          "cachedResultName": "documents_name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "document_id": "={{ $json.metadata.document_id }}",
+            "document_name": "={{ $json.metadata.document_name }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "document_id",
+              "displayName": "document_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "document_name",
+              "displayName": "document_name",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1904,
+        -272
+      ],
+      "id": "65881498-c023-4abf-84f0-6004123e30e5",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "2xyJatNrKJ86RMLN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sanitize",
+        "text": "={{ $json.text }}",
+        "guardrails": {
+          "pii": {
+            "value": {
+              "type": "=all"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.guardrails",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        -32
+      ],
+      "id": "94c1b520-ba0e-4ed0-bdbb-e29395f9390a",
+      "name": "Guardrails"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "={{ $json.document }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        608,
+        -144
+      ],
+      "id": "5c2ca7e7-f095-4712-9cb6-b861aa480f80",
+      "name": "extract_pdf"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "={{ $json.document }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        608,
+        80
+      ],
+      "id": "08c92142-bbf4-47e2-a8da-d2d84321393d",
+      "name": "extract_text"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===== Utilidades ==================================================\n\n// Valida types permitidos\nfunction mimeTypePermitido(mimeType) {\n  return [\n    \"application/pdf\",\n    \"text/plain\"\n  ].includes(mimeType);\n}\n\n// Obtiene el tamaño en bytes\nfunction convertirTamanoABytes(sizeStr) {\n  const num = parseFloat(sizeStr);\n  let bytes = num;\n\n  if (sizeStr.includes('kB')) {\n    bytes = num * 1024;\n  } \n  else if (sizeStr.includes('MB')) {\n    bytes = num * 1024 * 1024;\n  } \n  else if (sizeStr.includes('GB')) {\n    bytes = num * 1024 * 1024 * 1024;\n  }\n\n  return bytes;\n}\n\n// ===== Lógica principal =========================================\n\nconst item = items[0];\n\nconst sizeStr = item.binary.data.fileSize;\nconst mimeType = item.binary.data.mimeType;\n\nconst fileSizeBytes = convertirTamanoABytes(sizeStr);\nconst TypeValido = mimeTypePermitido(mimeType);\n\n// Guardar resultados para usar en IF node\nitem.json.fileSizeBytes = fileSizeBytes;\nitem.json.fileName = item.binary.data.fileName;;\nitem.json.typePermitido = TypeValido;\nitem.json.document = item.binary.data;\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -272
+      ],
+      "id": "9b1fe20c-4def-4af4-a6f8-ede5687e14b0",
+      "name": "file_metadata_extractor"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3b84f1df-2eb8-45a5-80ab-40dd171bd538",
+              "leftValue": "={{ $json.fileSizeBytes }}",
+              "rightValue": 50000,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            },
+            {
+              "id": "a9d7750d-319d-47aa-ad95-b41ad618e9da",
+              "leftValue": "={{ $json.typePermitido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        128,
+        -16
+      ],
+      "id": "b1694c31-57e1-493c-a374-5b1be2285128",
+      "name": "document_validator"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        -272
+      ],
+      "id": "315a54be-2893-4048-9975-3a5f2027528c",
+      "name": "Top1_asc"
+    },
+    {
+      "parameters": {
+        "mode": "combineBySql",
+        "query": "SELECT text FROM input1\nUNION\nSELECT data [text] FROM input2",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        864,
+        -32
+      ],
+      "id": "095dd5d8-6f13-4248-b86f-a9d54a60535b",
+      "name": "Append"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getCleanData()\n{\n  // Este código limpia el texto extraído para mejorar el embedding\n  let text = $input.first().json.guardrailsInput || \"\";\n  // 1. Eliminar espacios en blanco excesivos\n  text = text.replace(/[ \\t]+/g, ' ');\n  // 2. Corregir saltos de línea huérfanos\n  // Esto une líneas que terminan en letra/coma y mantiene los párrafos reales (\\n\\n).\n  text = text.replace(/([^\\n])\\n([^\\n])/g, '$1 $2');\n  // 3. Eliminar múltiples saltos de línea\n  text = text.replace(/\\n{3,}/g, '\\n\\n');\n  // 4. Limpiar caracteres especiales que no aportan semántica (opcional)\n  text = text.replace(/[•●■]/g, '-'); \n  return text.trim();\n}\n\n\n// Genera un GUID simple\nfunction generateGUID() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\nconst items = $input.all();\n\nreturn items.map(item => ({\n  json: {\n    ...item.json,\n    document_id: generateGUID(),\n    document_name: $('file_metadata_extractor').first().json.fileName ?? 'unknown',\n    document_data: getCleanData()\n  }, \n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -272
+      ],
+      "id": "c88786fa-5a65-442e-a46c-9d8af407c07b",
+      "name": "document_preprocessor"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "file_metadata_extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Top1_asc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "extract_pdf",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "extract_text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings HuggingFace Inference": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        []
+      ]
+    },
+    "Guardrails": {
+      "main": [
+        [
+          {
+            "node": "document_preprocessor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_pdf": {
+      "main": [
+        [
+          {
+            "node": "Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_text": {
+      "main": [
+        [
+          {
+            "node": "Append",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "file_metadata_extractor": {
+      "main": [
+        [
+          {
+            "node": "document_validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "document_validator": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Top1_asc": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append": {
+      "main": [
+        [
+          {
+            "node": "Guardrails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "document_preprocessor": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c12f5803-ebe0-4f1e-97f2-70f8adc465f1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "15037c9ff8f51da0fd771ad68a14324c482b3a94da2040fcd9198898df9312b6"
+  },
+  "id": "ziR8U2XqcngBog1S",
+  "tags": []
+}

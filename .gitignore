@@ -1,0 +1,93 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+# Build Results
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+# IDEs and tools
+.vscode/
+.vs/
+.idea/
+*.sln.iml
+
+# Xamarin/.NET MAUI specific
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+*.jar
+*.keystore
+*.pdb
+*.mdb
+*.cache
+*.log
+*.zip
+*.vsix
+*.xcuserstate
+*.xcuserdatad/
+*.DS_Store
+
+# Mac build artifacts
+bin/
+obj/
+build/
+*.dSYM/
+
+# Configuration files
+*.local.json
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+*.nuspec
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Tizen-specific
+*.tpk
+*.xml
+*.sig
+
+# JetBrains Rider
+.idea/
+
+# MAUI specific (for multi-platform builds)
+Platforms/Android/obj/
+Platforms/Android/bin/
+Platforms/iOS/obj/
+Platforms/iOS/bin/
+Platforms/MacCatalyst/obj/
+Platforms/MacCatalyst/bin/
+Platforms/Windows/obj/
+Platforms/Windows/bin/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.orig
+
+# Logs
+*.log
+
+# DotCover
+.idea/.dotCover
+
+# Rider settings
+.idea/
+
+# Visual Studio Code settings
+.vscode/
+
+
+/.vs
