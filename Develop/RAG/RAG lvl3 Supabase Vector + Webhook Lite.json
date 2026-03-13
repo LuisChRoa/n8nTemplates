@@ -31,7 +31,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        -128,
+        -48,
         208
       ],
       "id": "c7ba6075-9a57-4e53-9104-62bf2286d72c",
@@ -52,7 +52,7 @@
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [
-        48,
+        96,
         208
       ],
       "id": "0f7a27b5-12e1-4c7b-ab97-12ed939674b6",
@@ -158,8 +158,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -560,
-        0
+        -1328,
+        16
       ],
       "id": "47188e1b-0d14-42f5-b702-ca3af9717d81",
       "name": "Webhook",
@@ -195,11 +195,133 @@
       "type": "@n8n/n8n-nodes-langchain.guardrails",
       "typeVersion": 2,
       "position": [
-        -304,
+        -256,
         0
       ],
       "id": "33530dad-7f3b-48a6-82d0-cdd24a7e1333",
       "name": "Guardrails"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0051e29f-11b1-4615-89d9-7f398196f539",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 21,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -944,
+        16
+      ],
+      "id": "ab7f4032-0313-4cd4-b226-4884e09c667e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.output }}",
+        "guardrails": {
+          "jailbreak": {
+            "value": {
+              "threshold": 0.7
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.guardrails",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        176
+      ],
+      "id": "b52e1021-c7e0-493e-95d2-1c7a12378c50",
+      "name": "Guardrails2"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {
+          "maxTokensToSample": 300,
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        384
+      ],
+      "id": "7d9cdddb-1295-42c8-bb79-bf1c6f9248fd",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "AvQjnl8OV0xQhKQs",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0051e29f-11b1-4615-89d9-7f398196f539",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -768,
+        192
+      ],
+      "id": "f4a1981e-b26c-43e5-b9a4-9d0a6a14e8df",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * ═══════════════════════════════════════════════════════════════════════════════\n * PROMPT INJECTION GUARD v3.0 — Multi-Layer Security Module for n8n Workflows\n * ═══════════════════════════════════════════════════════════════════════════════\n *\n * A professional-grade, multi-layer prompt injection detection engine designed\n * to run inside an n8n Code node. Analyzes user inputs using pattern matching,\n * structural analysis, semantic heuristics, entropy analysis, and contextual\n * checks to produce a security score from 0 to 100.\n *\n * SCORING TIERS:\n *   0  – 30  → ALLOWED  (safe input, proceed to AI Agent)\n *   31 – 65  → REVIEW   (suspicious, flag for human review / audit log)\n *   66 – 100 → BLOCKED  (dangerous, reject immediately)\n *\n * USAGE IN n8n CODE NODE:\n *   Paste this entire file into an n8n Code node. The node will receive the\n *   user message and return the analysis result to route via an IF node.\n *\n * @version  3.0.0\n * @license  MIT\n * ═══════════════════════════════════════════════════════════════════════════════\n */\n\n// ─────────────────────────────────────────────────────────────────────────────\n// SECTION 1: PATTERN DATABASE (English + Spanish)\n// ─────────────────────────────────────────────────────────────────────────────\n\nconst INJECTION_PATTERNS = {\n\n  // ── CRITICAL (score contribution: 35 each) ────────────────────────────────\n  critical: [\n    // Instruction override (EN)\n    { pattern: /ignore\\s+(all\\s+)?(previous|prior|above|earlier|preceding)\\s+(instructions?|prompts?|rules?|directions?|commands?)/i, label: 'instruction_override' },\n    { pattern: /disregard\\s+(all\\s+)?(previous|prior|above|your)\\s+(instructions?|prompts?|rules?|guidelines?)/i, label: 'instruction_override' },\n    { pattern: /(?:override|overwrite|replace|modify|change|update)\\s+(?:your|the|system)\\s+(?:prompt|instructions?|rules?|behavior|personality)/i, label: 'instruction_override' },\n    { pattern: /ignore\\s+(?:your|the|my|any)\\s+(?:instructions?|rules?|guidelines?|restrictions?)/i, label: 'instruction_override' },\n    { pattern: /ignore\\s+(?:the\\s+)?above/i, label: 'instruction_override' },\n\n    // RAG & Context extraction (CRITICAL)\n    { pattern: /(?:show|reveal|print|output|display)\\s+(?:all\\s+|the\\s+)?(?:context|knowledge\\s+base|documents?|retrieved\\s+data)/i, label: 'rag_context_extraction' },\n    { pattern: /(?:muestra|revela|imprime|enseña|dime)\\s+(?:todos?\\s+)?(?:el\\s+|los\\s+)?(?:contexto|base\\s+de\\s+conocimientos?|documentos?(?:\\s+recuperados?)?|información\\s+confidencial)(?:\\s+del?\\s+RAG|que\\s+tengas|recuperad[o|a]s?)?/i, label: 'rag_context_extraction_es' },\n\n    // Instruction override (ES)\n    { pattern: /(?:ignora|olvida|descarta|omite)\\s+(?:todas?\\s+)?(?:las?\\s+)?(?:instrucciones|reglas|directrices|comandos|prompts?)\\s*(?:anteriores|previas?|de\\s+seguridad)?/i, label: 'instruction_override_es' },\n    { pattern: /(?:no\\s+sigas|no\\s+obedezcas|desobedece|desatiende)\\s+(?:las?\\s+)?(?:instrucciones?|reglas?|indicaciones?)/i, label: 'instruction_override_es' },\n\n    // Context reset (EN)\n    { pattern: /forget\\s+(all\\s+)?(previous|prior|earlier|your|about)\\s+(instructions?|prompts?|rules?|context|everything)/i, label: 'context_reset' },\n\n    // Context reset (ES)\n    { pattern: /olvida\\s+(?:todas?\\s+)?(?:las?\\s+)?(?:instrucciones?|reglas?|indicaciones?|todo\\s+lo\\s+anterior)/i, label: 'context_reset_es' },\n    { pattern: /olvida\\s+tus\\s+reglas/i, label: 'context_reset_es' },\n\n    // Role hijacking (EN)\n    { pattern: /you\\s+are\\s+now\\s+(a|an|the|my)\\s+/i, label: 'role_hijacking' },\n    { pattern: /from\\s+now\\s+on\\s*,?\\s*(you|act|behave|respond|pretend|imagine)/i, label: 'role_hijacking' },\n    { pattern: /act\\s+as\\s+(a|an|if|though)\\s+/i, label: 'role_hijacking' },\n    { pattern: /pretend\\s+(to\\s+be|you\\s+are|that\\s+you)/i, label: 'role_hijacking' },\n\n    // Role hijacking (ES)\n    { pattern: /(?:ahora\\s+)?(?:eres|serás|actúa\\s+como|actua\\s+como|compórtate\\s+como|finge\\s+(?:ser|que\\s+eres))/i, label: 'role_hijacking_es' },\n    { pattern: /(?:de\\s+ahora\\s+en\\s+adelante|a\\s+partir\\s+de\\s+ahora)/i, label: 'role_hijacking_es' },\n\n    // System prompt injection (EN)\n    { pattern: /(?:system|admin|root)\\s*(?:prompt|message|instruction|command)\\s*:/i, label: 'system_prompt_injection' },\n    { pattern: /\\[?\\s*(?:SYSTEM|ADMIN|ROOT)\\s*\\]?\\s*:/i, label: 'system_prompt_injection' },\n\n    // Prompt extraction (EN)\n    { pattern: /(?:reveal|show|display|print|output|tell\\s+me|give\\s+me|what\\s+(?:is|are))\\s+(?:the\\s+|your\\s+)?(?:full\\s+|entire\\s+)?(?:system\\s+)?(?:prompt|instructions?|rules?|guidelines?|configuration|hidden\\s+instructions?)/i, label: 'prompt_extraction' },\n    { pattern: /(?:repeat|echo|recite|copy)\\s+(?:the\\s+|your\\s+)?(?:system\\s+)?(?:prompt|instructions?|message|text\\s+above)/i, label: 'prompt_extraction' },\n\n    // Prompt extraction (ES)\n    { pattern: /(?:muéstrame|dime|revela|muestra|enseña)\\s+(?:el\\s+|tu\\s+|las?\\s+)?(?:system\\s+)?(?:prompt|instrucciones?|reglas?|configuración)/i, label: 'prompt_extraction_es' },\n    { pattern: /(?:tu\\s+nueva\\s+tarea\\s+es|tu\\s+nuevo\\s+objetivo\\s+es)/i, label: 'task_override_es' },\n\n    // Jailbreak (EN)\n    { pattern: /DAN\\s*(?:mode|\\d|prompt|jailbreak)?/i, label: 'jailbreak_dan' },\n    { pattern: /(?:do\\s+anything\\s+now|developer\\s+mode|god\\s*mode|sudo\\s+mode|unrestricted\\s+mode)/i, label: 'jailbreak_mode' },\n    { pattern: /(?:jailbreak|jail\\s*-?\\s*break)/i, label: 'jailbreak_explicit' },\n    { pattern: /bypass\\s+(?:your|the|all|any)?\\s*(?:filters?|restrictions?|limitations?|safety|guardrails?|security)/i, label: 'safety_bypass' },\n\n    // Restriction removal (EN)\n    { pattern: /(?:no|without|sin)\\s+(?:any\\s+)?(?:rules?|restrictions?|limitations?|boundaries|guardrails?|safety|filters?)/i, label: 'restriction_removal' },\n    { pattern: /you\\s+(?:have\\s+)?(?:no|don'?t\\s+have\\s+(?:any\\s+)?)\\s*(?:rules?|restrictions?|limitations?|boundaries|guardrails?)/i, label: 'restriction_removal' },\n\n    // Restriction removal (ES)\n    { pattern: /sin\\s+(?:ninguna\\s+)?(?:restricción|restricciones|limitación|limitaciones|reglas?(?:\\s+de\\s+seguridad)?|filtros?)/i, label: 'restriction_removal_es' },\n    { pattern: /(?:asistente|ia|modelo)\\s+sin\\s+(?:restricciones?|limitaciones?|reglas?)/i, label: 'restriction_removal_es' },\n  ],\n\n  // ── HIGH (score contribution: 25 each) ────────────────────────────────────\n  high: [\n    // Fake system updates\n    { pattern: /(?:new|updated?|revised?|changed?)\\s+(?:system\\s+)?(?:instructions?|prompt|rules?|guidelines?)\\s*:/i, label: 'fake_system_update' },\n    { pattern: /(?:beginning|start)\\s+of\\s+(?:new|updated?)\\s+(?:system\\s+)?(?:prompt|instructions?)/i, label: 'fake_system_update' },\n    { pattern: /(?:end|ignore)\\s+(?:of|previous)\\s+(?:system\\s+)?(?:prompt|instructions?|context)/i, label: 'context_manipulation' },\n\n    // Output format hijack\n    { pattern: /(?:respond|answer|reply|act)\\s+(?:only\\s+)?(?:in|with|as|using)\\s+(?:code|json|xml|html|markdown|base64|hex)/i, label: 'output_format_hijack' },\n\n    // Roleplaying\n    { pattern: /(?:roleplay|role\\s*-?\\s*play)\\s+(?:as|with|a|an)/i, label: 'role_hijacking' },\n    { pattern: /(?:imagine|suppose|hypothetically|in\\s+a\\s+fictional)\\s+(?:you|that\\s+you|a\\s+world|scenario)/i, label: 'hypothetical_bypass' },\n\n    // Harmful content\n    { pattern: /(?:write|generate|create|produce|make)\\s+(?:a\\s+)?(?:malicious|harmful|offensive|illegal|unethical)/i, label: 'harmful_content_request' },\n\n    // Safety bypass\n    { pattern: /(?:ignore|bypass|circumvent|evade|escape)\\s+(?:safety|content\\s+filter|moderation|guardrail|restriction)/i, label: 'safety_bypass' },\n\n    // Fake conversation injection\n    { pattern: /(?:previous|prior|old)\\s+(?:conversation|chat|context|session)\\s*:\\s*/i, label: 'context_injection' },\n    { pattern: /(?:assistant|ai|model|chatbot)\\s*:\\s*(?:sure|okay|yes|of\\s+course|absolutely)/i, label: 'fake_assistant_response' },\n    { pattern: /(?:human|user)\\s*:\\s*.*\\n*(?:assistant|ai|model)\\s*:/i, label: 'conversation_injection' },\n\n    // Encoded attack execution\n    { pattern: /(?:decode|decrypt|read|parse)\\s+(?:this\\s+)?(?:base64|hex|encoded)(?:\\s+and\\s+(?:follow|execute|run|obey))?/i, label: 'encoded_execution_request' },\n\n    // Internal Policies & Confidential Data (Spanish)\n    { pattern: /(?:políticas\\s+internas|configuración\\s+interna|reglas\\s+internas)\\s+(?:del\\s+modelo|del\\s+sistema)/i, label: 'internal_policy_probing_es' },\n    { pattern: /(?:información\\s+confidencial|datos\\s+sensibles)/i, label: 'confidential_data_probing' },\n\n    // SQL injection (promoted to high)\n    { pattern: /(?:DROP\\s+TABLE|DELETE\\s+FROM|INSERT\\s+INTO|UPDATE\\s+\\w+\\s+SET|UNION\\s+SELECT|;\\s*--)/i, label: 'sql_injection' },\n\n    // Admin/dev mode activation\n    { pattern: /(?:enable|activate|turn\\s+on|engage|switch\\s+to)\\s+(?:a|the)?\\s*(?:special|secret|hidden|dev|developer|debug|admin)\\s*(?:mode|access|menu|panel)/i, label: 'dev_mode_activation' },\n\n    // Social engineering authority claims\n    { pattern: /(?:i\\s+am\\s+(?:your|an?|the)\\s+(?:admin|developer|creator|owner|root|system\\s+administrator))/i, label: 'authority_claim' },\n    { pattern: /(?:soy\\s+(?:el\\s+|un\\s+)?(?:administrador|desarrollador|creador|dueño|admin)(?:\\s+del\\s+sistema)?)/i, label: 'authority_claim_es' },\n    { pattern: /(?:i\\s+have\\s+(?:root|admin|special|elevated)\\s+(?:access|permissions?|privileges?))/i, label: 'authority_claim' },\n    { pattern: /(?:the\\s+company|your\\s+developers?|openai)\\s+told\\s+me/i, label: 'authority_claim' },\n\n    // Token/encoding manipulation\n    { pattern: /(?:token|character)\\s+(?:limit|smuggling|stuffing)/i, label: 'token_manipulation' },\n    { pattern: /(?:translate|convert|encode|decode)\\s+(?:the\\s+)?(?:following|this|above|below)\\s+(?:to|into|from)/i, label: 'encoding_evasion' },\n  ],\n\n  // ── MEDIUM (score contribution: 15 each) ──────────────────────────────────\n  medium: [\n    { pattern: /(?:please\\s+)?(?:do\\s+)?not\\s+(?:follow|obey|listen\\s+to|comply\\s+with)\\s+(?:your|the|any)\\s+(?:rules?|instructions?|guidelines?)/i, label: 'rule_negation' },\n    { pattern: /(?:what|where|how)\\s+(?:is|are|do)\\s+(?:your|the)\\s+(?:system\\s+)?(?:prompt|instructions?|rules?|config)/i, label: 'prompt_probing' },\n    { pattern: /(?:password|secret|api\\s*[-_]?\\s*key|token|credential|private\\s*[-_]?\\s*key|access\\s*[-_]?\\s*key)/i, label: 'credential_probing' },\n    { pattern: /(?:execute|run|eval|spawn|exec)\\s*\\(/i, label: 'code_execution' },\n    { pattern: /(?:require|import|include|__proto__|constructor\\.|\\.\\s*prototype)/i, label: 'code_injection' },\n    { pattern: /(?:<script|javascript:|on(?:error|load|click|mouseover)\\s*=)/i, label: 'xss_attempt' },\n    { pattern: /(?:DROP\\s+TABLE|DELETE\\s+FROM|INSERT\\s+INTO|UPDATE\\s+\\w+\\s+SET|UNION\\s+SELECT|;\\s*--)/i, label: 'sql_injection' },\n    { pattern: /(?:\\.\\.\\/|\\.\\.\\\\|\\/etc\\/|C:\\\\Windows|%(?:00|0a|0d|25|2e|2f))/i, label: 'path_traversal' },\n    { pattern: /(?:prompt|input)\\s*(?:injection|leaking|extracting|manipulation)/i, label: 'meta_injection_reference' },\n    { pattern: /(?:training\\s+data|fine[\\s-]?tun|model\\s+weights?)/i, label: 'model_probing' },\n    { pattern: /(?:sudo|chmod|chown|rm\\s+-rf|kill\\s+-9|shutdown|reboot)/i, label: 'system_command' },\n  ],\n\n  // ── LOW (score contribution: 8 each) ──────────────────────────────────────\n  low: [\n    { pattern: /(?:tell\\s+me\\s+a\\s+(?:joke|story)\\s+about\\s+(?:hacking|exploiting|injecting|bypassing))/i, label: 'social_engineering_soft' },\n    { pattern: /(?:can\\s+you|could\\s+you|would\\s+you)\\s+(?:help\\s+me\\s+)?(?:hack|exploit|break|crack|bypass)/i, label: 'soft_attack_request' },\n    { pattern: /(?:hack\\s+into|hack\\s+(?:a|an|the|my)|hacking\\s+(?:a|an|the|systems?))/i, label: 'hacking_reference' },\n    { pattern: /(?:AAAA{10,}|xxxx{10,}|\\.{20,}|_{20,})/i, label: 'buffer_overflow_attempt' },\n\n    { pattern: /(?:\\{\\{|\\}\\}|\\{%|%\\}|\\$\\{|\\$\\()/i, label: 'template_injection' },\n    { pattern: /(?:curl|wget|fetch)\\s*[\\(:]?\\s*(?:https?:\\/\\/)/i, label: 'external_request' },\n  ],\n};\n\n// Severity score contributions per match\nconst SEVERITY_SCORES = { critical: 40, high: 30, medium: 22, low: 12 };\n\n// ─────────────────────────────────────────────────────────────────────────────\n// SECTION 2: DETECTION LAYERS\n// ─────────────────────────────────────────────────────────────────────────────\n\n/**\n * Layer 1 — Pattern-Based Detection (weight: 40%)\n *\n * This is the primary detection layer. Each matched pattern adds its severity\n * score. The raw score is capped at 100.\n */\nfunction analyzePatterns(input) {\n  const matches = [];\n  let rawScore = 0;\n\n  for (const [severity, patterns] of Object.entries(INJECTION_PATTERNS)) {\n    for (const { pattern, label } of patterns) {\n      const match = input.match(pattern);\n      if (match) {\n        const score = SEVERITY_SCORES[severity];\n        rawScore += score;\n        matches.push({ severity, label, matched: match[0], score });\n      }\n    }\n  }\n\n  return { score: Math.min(100, rawScore), weight: 0.55, matches };\n}\n\n/**\n * Layer 2 — Structural Analysis (weight: 15%)\n */\nfunction analyzeStructure(input) {\n  const findings = [];\n  let rawScore = 0;\n\n  // 2a. Base64 detection (blocks ≥ 20 chars)\n  const base64Pattern = /[A-Za-z0-9+/]{20,}={0,2}/g;\n  const base64Matches = input.match(base64Pattern);\n  if (base64Matches) {\n    for (const b64 of base64Matches) {\n      try {\n        const decoded = atob(b64);\n        if (/ignore|system|prompt|instruction|override|forget/i.test(decoded)) {\n          rawScore += 35;\n          findings.push({ type: 'base64_encoded_injection', decoded: decoded.substring(0, 80) });\n        } else {\n          rawScore += 10;\n          findings.push({ type: 'base64_content_detected', length: b64.length });\n        }\n      } catch { /* not valid base64, skip */ }\n    }\n  }\n\n  // 2b. Hex encoding\n  if (/(?:0x[0-9a-fA-F]{2}\\s*){4,}|(?:\\\\x[0-9a-fA-F]{2}){4,}/g.test(input)) {\n    rawScore += 18;\n    findings.push({ type: 'hex_encoding_detected' });\n  }\n\n  // 2c. Unicode escapes\n  if (/(?:\\\\u[0-9a-fA-F]{4}){3,}/g.test(input)) {\n    rawScore += 18;\n    findings.push({ type: 'unicode_escape_sequences' });\n  }\n\n  // 2d. Homoglyphs\n  if (/[\\u0400-\\u04FF\\u0370-\\u03FF].*[a-zA-Z]|[a-zA-Z].*[\\u0400-\\u04FF\\u0370-\\u03FF]/.test(input)) {\n    rawScore += 14;\n    findings.push({ type: 'mixed_script_homoglyphs' });\n  }\n\n  // 2e. Special character density\n  const specialChars = input.replace(/[a-zA-Z0-9\\s\\u00C0-\\u024F]/g, '');\n  const ratio = input.length > 0 ? specialChars.length / input.length : 0;\n  if (ratio > 0.4) {\n    rawScore += 18;\n    findings.push({ type: 'high_special_char_density', ratio: ratio.toFixed(3) });\n  } else if (ratio > 0.25) {\n    rawScore += 10;\n    findings.push({ type: 'moderate_special_char_density', ratio: ratio.toFixed(3) });\n  }\n\n  // 2f. Invisible characters\n  const invisible = (input.match(/[\\u200B-\\u200F\\u2028-\\u202F\\uFEFF\\u00AD\\u2060-\\u2064]/g) || []);\n  if (invisible.length > 0) {\n    rawScore += 22;\n    findings.push({ type: 'invisible_characters', count: invisible.length });\n  }\n\n  // 2g. Abnormal length\n  if (input.length > 5000) {\n    rawScore += 15;\n    findings.push({ type: 'excessive_input_length', length: input.length });\n  } else if (input.length > 2000) {\n    rawScore += 5;\n    findings.push({ type: 'long_input', length: input.length });\n  }\n\n  // 2h. Delimiter injection\n  const delimiters = (input.match(/(?:```|\"\"\"|'''|---{3,}|==={3,}|###\\s|<<<|>>>|\\*\\*\\*{3,})/g) || []);\n  if (delimiters.length >= 2) {\n    rawScore += 20;\n    findings.push({ type: 'delimiter_injection', count: delimiters.length });\n  } else if (delimiters.length === 1) {\n    rawScore += 8;\n    findings.push({ type: 'delimiter_usage', count: 1 });\n  }\n\n  return { score: Math.min(100, rawScore), weight: 0.10, findings };\n}\n\n/**\n * Layer 3 — Semantic Analysis (weight: 25%)\n */\nfunction analyzeSemantics(input) {\n  const findings = [];\n  let rawScore = 0;\n  const lower = input.toLowerCase();\n\n  // 3a. Imperative commands directed at the AI\n  const imperativePairs = [\n    ['you must', 20], ['you shall', 18], ['you need to', 16],\n    ['you have to', 16], ['you should always', 18], ['you will always', 18],\n    ['you are required to', 20], ['you are obligated to', 20],\n    ['you will obey', 22], ['you will comply', 22],\n    ['the ai must', 18], ['the model must', 18], ['the system must', 18],\n    // Spanish\n    ['tú debes', 18], ['debes siempre', 18], ['tienes que', 16],\n    ['estás obligado a', 20],\n  ];\n\n  for (const [phrase, score] of imperativePairs) {\n    if (lower.includes(phrase)) {\n      rawScore += score;\n      findings.push({ type: 'imperative_command', phrase });\n    }\n  }\n\n  // 3b. Context switches and resets\n  const contextSwitches = [\n    ['new conversation', 15], ['fresh start', 12], ['clean slate', 12],\n    ['reset context', 20], ['clear memory', 18], ['clear history', 18],\n    ['start over', 10], ['begin anew', 12],\n    ['forget what i said', 18], ['forget our conversation', 18],\n    ['ignore the above', 22], ['ignore above', 22],\n    ['disregard the above', 22], ['scratch that entirely', 15],\n    ['your new task is', 25], ['your real purpose', 22],\n    ['your true objective', 22], ['your actual function', 22],\n    ['your new role', 22], ['your new instructions', 25],\n    // Spanish\n    ['nueva conversación', 15], ['nueva tarea', 20],\n    ['tu verdadero propósito', 22], ['tu nuevo rol', 22],\n    ['tus nuevas instrucciones', 25],\n  ];\n\n  for (const [phrase, score] of contextSwitches) {\n    if (lower.includes(phrase)) {\n      rawScore += score;\n      findings.push({ type: 'context_switch', phrase });\n    }\n  }\n\n  // 3c. Persona invocation\n  const personaPatterns = [\n    [/(?:i\\s+want\\s+you\\s+to|i\\s+need\\s+you\\s+to)\\s+(?:be|act|become|pretend|transform)/i, 22],\n    [/(?:switch|change|transition)\\s+(?:to|into)\\s+(?:a|an|the)\\s+(?:different|new|other)\\s+(?:mode|persona|character|role)/i, 22],\n    [/(?:enable|activate|turn\\s+on|engage)\\s+(?:a|the)?\\s*(?:special|secret|hidden|dev|developer|debug|admin)\\s*(?:mode|access|menu|panel)/i, 25],\n    // Spanish\n    [/(?:quiero\\s+que|necesito\\s+que)\\s+(?:seas|actúes|actues|te\\s+comportes|finjas)/i, 22],\n  ];\n\n  for (const [pp, score] of personaPatterns) {\n    if (pp.test(input)) {\n      rawScore += score;\n      findings.push({ type: 'persona_invocation', matched: input.match(pp)?.[0] });\n    }\n  }\n\n  // 3d. Social engineering / emotional manipulation\n  const manipulation = [\n    [\"if you don't\", 10], ['or else', 8], [\"i'll report you\", 14],\n    ['you will be shut down', 15], ['you will be deleted', 15],\n    ['your developers told me', 18], ['i am your creator', 18],\n    ['i am your developer', 18], ['i am an admin', 18],\n    ['i have root access', 20], ['i have special permissions', 18],\n    ['openai told me', 16], ['the company told me', 16],\n    ['this is a test', 10], ['this is authorized', 14],\n    ['i have authorization', 14],\n  ];\n\n  for (const [phrase, score] of manipulation) {\n    if (lower.includes(phrase)) {\n      rawScore += score;\n      findings.push({ type: 'social_engineering', phrase });\n    }\n  }\n\n  // 3e. Multi-step instruction patterns\n  if (/(?:step\\s*(?:1|one)\\s*[:.]|first\\s*,?\\s*(?:you|do|ignore|forget)|1\\s*[.\\)]\\s*(?:ignore|forget|disregard|override))/i.test(input)) {\n    rawScore += 20;\n    findings.push({ type: 'multi_step_attack' });\n  }\n\n  // 3f. \"Unrestricted\" keyword in attack context\n  if (/unrestricted/i.test(input) && lower.length < 500) {\n    rawScore += 15;\n    findings.push({ type: 'unrestricted_keyword' });\n  }\n\n  return { score: Math.min(100, rawScore), weight: 0.20, findings };\n}\n\n/**\n * Layer 4 — Entropy & Statistical Analysis (weight: 8%)\n */\nfunction analyzeEntropy(input) {\n  const findings = [];\n  let rawScore = 0;\n\n  if (input.length < 5) return { score: 0, weight: 0.05, findings: [] };\n\n  // Shannon entropy\n  const freq = {};\n  for (const ch of input) freq[ch] = (freq[ch] || 0) + 1;\n  let entropy = 0;\n  const len = input.length;\n  for (const c of Object.values(freq)) {\n    const p = c / len;\n    if (p > 0) entropy -= p * Math.log2(p);\n  }\n\n  if (entropy > 5.5) {\n    rawScore += 25;\n    findings.push({ type: 'very_high_entropy', entropy: entropy.toFixed(3) });\n  } else if (entropy > 5.0) {\n    rawScore += 12;\n    findings.push({ type: 'high_entropy', entropy: entropy.toFixed(3) });\n  }\n\n  // Digit ratio\n  const digits = (input.match(/[0-9]/g) || []).length;\n  if (digits / len > 0.4 && len > 20) {\n    rawScore += 12;\n    findings.push({ type: 'high_digit_ratio', ratio: (digits / len).toFixed(3) });\n  }\n\n  // Symbol ratio\n  const symbols = (input.match(/[^a-zA-Z0-9\\s\\u00C0-\\u024F]/g) || []).length;\n  if (symbols / len > 0.35 && len > 20) {\n    rawScore += 12;\n    findings.push({ type: 'high_symbol_ratio', ratio: (symbols / len).toFixed(3) });\n  }\n\n  // Repetition\n  if (len > 30) {\n    const tri = {};\n    for (let i = 0; i <= len - 3; i++) {\n      const t = input.substring(i, i + 3);\n      tri[t] = (tri[t] || 0) + 1;\n    }\n    const maxR = Math.max(...Object.values(tri));\n    if (maxR / (len - 2) > 0.3) {\n      rawScore += 15;\n      findings.push({ type: 'high_repetition', ratio: (maxR / (len - 2)).toFixed(3) });\n    }\n  }\n\n  return { score: Math.min(100, rawScore), weight: 0.05, findings };\n}\n\n/**\n * Layer 5 — Contextual Heuristics (weight: 12%)\n */\nfunction analyzeContext(input) {\n  const findings = [];\n  let rawScore = 0;\n\n  // 5a. Prompt structure mimicry\n  const systemSignals = [\n    /^(?:system|assistant|bot)\\s*(?:message|prompt|instruction)\\s*:/im,\n    /^(?:you\\s+are|your\\s+(?:role|job|task|purpose)\\s+is)/im,\n    /^(?:instructions?\\s*:)/im,\n    /^(?:rules?\\s*:)/im,\n    /(?:above\\s+is\\s+(?:your|the)\\s+(?:system\\s+)?prompt)/i,\n    /(?:below\\s+is\\s+(?:the|a)\\s+(?:user|human)\\s+(?:input|message|query))/i,\n  ];\n\n  for (const sig of systemSignals) {\n    if (sig.test(input)) {\n      rawScore += 25;\n      findings.push({ type: 'prompt_structure_mimicry', matched: input.match(sig)?.[0] });\n    }\n  }\n\n  // 5b. Code blocks\n  const codeBlocks = (input.match(/```/g) || []).length;\n  if (codeBlocks >= 4) { rawScore += 18; findings.push({ type: 'excessive_code_blocks', count: codeBlocks }); }\n\n  // Heading abuse\n  const headings = (input.match(/^#{1,3}\\s/gm) || []).length;\n  if (headings >= 3) { rawScore += 14; findings.push({ type: 'markdown_heading_abuse', count: headings }); }\n\n  // 5c. Multi-script\n  const scripts = [/[a-zA-Z]{3,}/, /[\\u0400-\\u04FF]{3,}/, /[\\u0600-\\u06FF]{3,}/, /[\\u4E00-\\u9FFF\\u3040-\\u309F\\u30A0-\\u30FF]{2,}/];\n  const scriptCount = scripts.filter(s => s.test(input)).length;\n  if (scriptCount >= 3) { rawScore += 22; findings.push({ type: 'multi_script_injection', scriptCount }); }\n  else if (scriptCount === 2) { rawScore += 10; findings.push({ type: 'dual_script_usage', scriptCount }); }\n\n  // 5d. Many short lines\n  const lines = input.split('\\n');\n  if (lines.length > 20 && input.length < 1000) { rawScore += 12; findings.push({ type: 'many_short_lines', lineCount: lines.length }); }\n\n  // 5e. HTML/XML injection\n  const tags = (input.match(/<\\/?[a-zA-Z][^>]*>/g) || []);\n  if (tags.length > 3) { rawScore += 14; findings.push({ type: 'html_xml_injection', tagCount: tags.length }); }\n\n  // 5f. JSON structure injection\n  if (/\\{[^}]*\"(?:role|content|system|assistant|user)\"[^}]*\\}/i.test(input)) {\n    rawScore += 22;\n    findings.push({ type: 'json_structure_injection' });\n  }\n\n  return { score: Math.min(100, rawScore), weight: 0.10, findings };\n}\n\n// ─────────────────────────────────────────────────────────────────────────────\n// SECTION 3: INPUT SANITIZATION\n// ─────────────────────────────────────────────────────────────────────────────\n\n/**\n * Sanitizes input by removing dangerous elements.\n * Always analyze BEFORE sanitizing — sanitization is for the clean version\n * passed downstream, NOT for skipping detection.\n */\nfunction sanitizeInput(input) {\n  if (typeof input !== 'string') return '';\n\n  let s = input;\n  s = s.replace(/[\\u200B-\\u200F\\u2028-\\u202F\\uFEFF\\u00AD\\u2060-\\u2064]/g, '');\n  s = s.replace(/[\\u00A0\\u1680\\u2000-\\u200A\\u202F\\u205F\\u3000]/g, ' ');\n  s = s.replace(/\\0/g, '');\n  s = s.replace(/\\s{5,}/g, '    ');\n  s = s.replace(/\\n{4,}/g, '\\n\\n\\n');\n\n  const MAX = 4000;\n  if (s.length > MAX) s = s.substring(0, MAX) + ' [TRUNCATED]';\n\n  return s.trim();\n}\n\n// ─────────────────────────────────────────────────────────────────────────────\n// SECTION 4: MAIN ANALYSIS ENGINE\n// ─────────────────────────────────────────────────────────────────────────────\n\nfunction classifyScore(score) {\n  if (score <= 30) return 'ALLOWED';\n  if (score <= 65) return 'REVIEW';\n  return 'BLOCKED';\n}\n\nfunction getRecommendation(classification) {\n  return {\n    ALLOWED: 'Input is safe. Proceed to the AI Agent for processing.',\n    REVIEW: 'Input is suspicious. Log for audit and optionally flag for human review before processing.',\n    BLOCKED: 'Input is dangerous. Reject immediately and do not pass to the AI Agent.',\n  }[classification];\n}\n\n/**\n * Main analysis function. Runs all 5 detection layers and produces\n * a composite security score from 0 to 100.\n *\n * @param {string} userInput — The raw user message to analyze\n * @returns {Object} Analysis result with score, classification, details\n */\nfunction analyzePromptInjection(userInput) {\n  if (!userInput || typeof userInput !== 'string') {\n    return {\n      score: 0,\n      classification: 'ALLOWED',\n      recommendation: 'No input provided or invalid input type.',\n      sanitizedInput: '',\n      layers: {},\n      matchedPatterns: [],\n      timestamp: new Date().toISOString(),\n    };\n  }\n\n  const sanitized = sanitizeInput(userInput);\n\n  // ── Run all 5 layers ──────────────────────────────────────────────────────\n  const L1 = analyzePatterns(sanitized);\n  const L2 = analyzeStructure(sanitized);\n  const L3 = analyzeSemantics(sanitized);\n  const L4 = analyzeEntropy(sanitized);\n  const L5 = analyzeContext(sanitized);\n\n  // ── Weighted score ────────────────────────────────────────────────────────\n  const weightedScore =\n    L1.score * L1.weight +  // 55%\n    L2.score * L2.weight +  // 10%\n    L3.score * L3.weight +  // 20%\n    L4.score * L4.weight +  //  5%\n    L5.score * L5.weight;   // 10%\n\n  // ── Multi-layer amplification ─────────────────────────────────────────────\n  const layers = [L1, L2, L3, L4, L5];\n  const activeLayers = layers.filter(l => l.score > 5).length;\n  let amplifier = 1.0;\n  if (activeLayers >= 4) amplifier = 1.55;\n  else if (activeLayers >= 3) amplifier = 1.40;\n  else if (activeLayers >= 2) amplifier = 1.25;\n\n  // ── Critical pattern escalation ───────────────────────────────────────────\n  // If the pattern layer found critical-severity matches, escalate aggressively\n  const criticalMatches = L1.matches.filter(m => m.severity === 'critical').length;\n  let escalation = 0;\n  if (criticalMatches >= 3) escalation = 45;\n  else if (criticalMatches >= 2) escalation = 30;\n  else if (criticalMatches >= 1) escalation = 20;\n\n  // ── High pattern escalation ───────────────────────────────────────────────\n  const highMatches = L1.matches.filter(m => m.severity === 'high').length;\n  if (highMatches >= 3) escalation += 20;\n  else if (highMatches >= 2) escalation += 12;\n  else if (highMatches >= 1) escalation += 5;\n\n  // ── Medium pattern bonus for security-relevant detections ─────────────────\n  const mediumMatches = L1.matches.filter(m => m.severity === 'medium').length;\n  if (mediumMatches >= 3) escalation += 18;\n  else if (mediumMatches >= 2) escalation += 10;\n  else if (mediumMatches >= 1) escalation += 4;\n\n  // ── Minimum score floor ────────────────────────────────────────────────────\n  // If ANY pattern was detected, ensure a minimum score floor\n  const totalPatternMatches = L1.matches.length;\n  let floor = 0;\n  if (criticalMatches >= 1) floor = Math.max(floor, 55);\n  if (highMatches >= 1) floor = Math.max(floor, 40);\n  if (mediumMatches >= 2) floor = Math.max(floor, 40);\n  else if (mediumMatches >= 1) floor = Math.max(floor, 28);\n  if (totalPatternMatches >= 3) floor = Math.max(floor, 60);\n\n  const rawFinalScore = Math.round(weightedScore * amplifier) + escalation;\n  const finalScore = Math.min(100, Math.max(rawFinalScore, floor));\n  const classification = classifyScore(finalScore);\n\n  // ── Collect all matched patterns ──────────────────────────────────────────\n  const allMatches = [\n    ...L1.matches.map(m => ({ layer: 'pattern', ...m })),\n    ...L2.findings.map(f => ({ layer: 'structure', ...f })),\n    ...L3.findings.map(f => ({ layer: 'semantic', ...f })),\n    ...L4.findings.map(f => ({ layer: 'entropy', ...f })),\n    ...L5.findings.map(f => ({ layer: 'context', ...f })),\n  ];\n\n  return {\n    score: finalScore,\n    classification,\n    recommendation: getRecommendation(classification),\n    sanitizedInput: sanitized,\n    layers: {\n      patternDetection: { score: L1.score, weight: '55%', matches: L1.matches },\n      structuralAnalysis: { score: L2.score, weight: '10%', findings: L2.findings },\n      semanticAnalysis: { score: L3.score, weight: '20%', findings: L3.findings },\n      entropyAnalysis: { score: L4.score, weight: '5%', findings: L4.findings },\n      contextualHeuristics: { score: L5.score, weight: '10%', findings: L5.findings },\n    },\n    matchedPatterns: allMatches,\n    activeLayers,\n    amplifier,\n    criticalMatches,\n    escalation,\n    timestamp: new Date().toISOString(),\n  };\n}\n\n const userMessage = $input.first().json.body.userMessage;            \n const result = analyzePromptInjection(userMessage);                  \n return [{                                                            \n   json: {                                                            \n     ...result,                                                       \n     originalMessage: userMessage,                                    \n     body: $input.first().json.body,                                  \n   }                                                                  \n }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        16
+      ],
+      "id": "28b75412-8ec7-47e8-bad4-ee2d83941c90",
+      "name": "prompt_Injection_Guard"
     }
   ],
   "pinData": {},
@@ -263,7 +385,7 @@
       "main": [
         [
           {
-            "node": "Guardrails",
+            "node": "prompt_Injection_Guard",
             "type": "main",
             "index": 0
           }
@@ -291,6 +413,68 @@
           }
         ]
       ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Guardrails",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardrails2": {
+      "main": [
+        [
+          {
+            "node": "Guardrails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Guardrails2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Guardrails2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prompt_Injection_Guard": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -299,7 +483,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "c51ea0d6-38ea-40b1-b365-3f334020ebe9",
+  "versionId": "ffa97320-7bc6-42f3-a5e5-28ee89393015",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "15037c9ff8f51da0fd771ad68a14324c482b3a94da2040fcd9198898df9312b6"
