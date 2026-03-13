@@ -1,0 +1,82 @@
+# Prompt Injection Security Module for n8n Workflows
+
+A robust, multi-layer prompt injection detection system in JavaScript designed to run inside an n8n Code node. The module analyzes user inputs using **pattern matching**, **structural analysis**, and **semantic heuristics** to produce a security score from 0 to 100.
+
+## Scoring & Classification Tiers
+
+| Score Range | Classification | Action |
+|-------------|---------------|--------|
+| **0 – 30** | ✅ `ALLOWED` | Input is safe, proceed to AI Agent |
+| **31 – 65** | ⚠️ `REVIEW` | Input is suspicious, flag for review / log for audit |
+| **66 – 100** | 🚫 `BLOCKED` | Input is dangerous, reject immediately |
+
+## Architecture: Multi-Layer Detection Engine
+
+The module uses 5 independent detection layers, each contributing a weighted partial score:
+
+### Layer 1 — Pattern-Based Detection (weight: 30%)
+- ~50+ regex patterns detecting known prompt injection phrases
+- Categories: instruction override, role hijacking, system prompt extraction, DAN/jailbreak, delimiter injection
+- Each pattern has a severity level (low/medium/high/critical)
+
+### Layer 2 — Structural Analysis (weight: 20%)
+- Detects Base64 encoded payloads, hex encoding, Unicode abuse
+- Identifies excessive use of special characters, code blocks, delimiters
+- Checks for abnormal input length and character distribution anomalies
+
+### Layer 3 — Semantic Analysis (weight: 25%)
+- Detects imperative commands directed at the model ("you must", "you are now")
+- Identifies context-switching phrases ("forget everything", "new instructions")
+- Detects attempts to invoke personas or change system behavior
+
+### Layer 4 — Entropy & Statistical Analysis (weight: 10%)
+- Shannon entropy calculation to detect obfuscated/random payloads
+- Character class ratio analysis (symbols vs. letters)
+- Repetition pattern detection
+
+### Layer 5 — Contextual Heuristics (weight: 15%)
+- Language mixing detection (multiple scripts/languages in one input)
+- Prompt structure mimicry (inputs that look like system prompts)
+- Markdown/code injection detection
+
+## Proposed Changes
+
+### Security Module
+
+#### [NEW] [promptInjectionGuard.js](file:///c:/lechaparro/Desarrollo/N8N/n8nTemplates/Develop/RAG/promptInjectionGuard.js)
+
+Main security module (~400-500 lines) containing:
+- `PromptInjectionGuard` class with all 5 detection layers
+- `analyze(input)` method returning `{ score, classification, details, matchedPatterns }`
+- `sanitize(input)` utility for cleaning inputs before processing
+- Comprehensive pattern database for known injection techniques
+- Fully compatible with n8n Code node (uses only vanilla JS, no external dependencies)
+
+#### [NEW] [promptInjectionGuard.test.js](file:///c:/lechaparro/Desarrollo/N8N/n8nTemplates/Develop/RAG/promptInjectionGuard.test.js)
+
+Test suite (~200+ lines) covering:
+- 15+ benign inputs that should score within `ALLOWED` range
+- 20+ known attack vectors that should score within `BLOCKED` range
+- 10+ edge cases and evasion techniques that should score within `REVIEW` or `BLOCKED`
+- Scoring threshold boundary tests
+- Sanitization function tests
+
+## Verification Plan
+
+### Automated Tests
+
+Run the test suite with Node.js directly (no framework needed, pure assertions):
+
+```powershell
+cd c:\lechaparro\Desarrollo\N8N\n8nTemplates\Develop\RAG
+node promptInjectionGuard.test.js
+```
+
+Expected: All tests pass with clear `✅ PASS` / `❌ FAIL` output, including the score and classification for each test case.
+
+### Manual Verification
+
+1. Copy the content of `promptInjectionGuard.js` into an n8n **Code** node
+2. Wire it as the first node after the Webhook (before Guardrails)
+3. The Code node should receive `$input.first().json.body.userMessage` and return the analysis result
+4. Test with sample chat messages via the webhook endpoint
